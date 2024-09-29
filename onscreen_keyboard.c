@@ -49,12 +49,31 @@ void on_caps_lock_button_clicked(GtkWidget *widget, gpointer data) {
 // Function to show About dialog
 void on_about_button_clicked(GtkButton *button, gpointer user_data) {
     GtkWidget *dialog=gtk_message_dialog_new(GTK_WINDOW(user_data),
-                                               GTK_DIALOG_DESTROY_WITH_PARENT,
-                                               GTK_MESSAGE_INFO,
-                                               GTK_BUTTONS_OK,
-                                               "Author: Jay Mee @ J~Net 2024");
+                                             GTK_DIALOG_DESTROY_WITH_PARENT,
+                                             GTK_MESSAGE_INFO,
+                                             GTK_BUTTONS_OK,
+                                             "Author: Jay Mee @ J~Net 2024");
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
+}
+
+// Function to create buttons for numbers and Roman numerals
+void create_buttons(GtkWidget *number_grid, GtkWidget *entry) {
+    // First row: buttons with numbers 0-9
+    for (int i=0; i<=9; i++) {
+        GtkWidget *button=gtk_button_new_with_label(g_strdup_printf("%d", i));
+        g_signal_connect(button, "clicked", G_CALLBACK(on_character_button_clicked), entry);
+        gtk_grid_attach(GTK_GRID(number_grid), button, i, 0, 1, 1);
+    }
+
+    // Second row: buttons with Roman numerals
+    const char *roman_numerals[] = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
+    int num_roman = sizeof(roman_numerals) / sizeof(roman_numerals[0]);
+    for (int i=0; i<num_roman; i++) {
+        GtkWidget *button=gtk_button_new_with_label(roman_numerals[i]);
+        g_signal_connect(button, "clicked", G_CALLBACK(on_character_button_clicked), entry);
+        gtk_grid_attach(GTK_GRID(number_grid), button, i, 1, 1, 1);
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -107,12 +126,8 @@ int main(int argc, char *argv[]) {
     g_signal_connect(caps_lock_button, "clicked", G_CALLBACK(on_caps_lock_button_clicked), buttons_list);
     gtk_grid_attach(GTK_GRID(letter_grid), caps_lock_button, 0, 3, 2, 1); // Adjust position as needed
 
-    // Populate number_grid (example layout)
-    for (int i=0; i <= 9; i++) {
-        GtkWidget *button=gtk_button_new_with_label(g_strdup_printf("%d", i));
-        g_signal_connect(button, "clicked", G_CALLBACK(on_character_button_clicked), entry);
-        gtk_grid_attach(GTK_GRID(number_grid), button, i, 0, 1, 1);
-    }
+    // Populate number_grid with numbers and Roman numerals
+    create_buttons(number_grid, entry);
 
     // Populate symbol_grid (example layout)
     const char *symbols[]={"{", "}", ":", ";", "!", "@", "#", "$", "%", "^", "&", "_", "=", "+", "-", "*", "(", ")"};
