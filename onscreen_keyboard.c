@@ -57,22 +57,37 @@ void on_about_button_clicked(GtkButton *button, gpointer user_data) {
     gtk_widget_destroy(dialog);
 }
 
+// Function to handle space button click
+void on_space_button_clicked(GtkWidget *widget, gpointer data) {
+    GtkEntry *entry=GTK_ENTRY(data);
+    const gchar *current_text=gtk_entry_get_text(entry); // Use const gchar *
+    gchar *new_text=g_strconcat(current_text, " ", NULL); // Append a space
+    gtk_entry_set_text(entry, new_text);
+    g_free(new_text);
+}
+
+// Function to handle clear button click
+void on_clear_button_clicked(GtkWidget *widget, gpointer data) {
+    GtkEntry *entry=GTK_ENTRY(data);
+    gtk_entry_set_text(entry, ""); // Clear the entry
+}
+
 // Function to create buttons for numbers and Roman numerals
 void create_buttons(GtkWidget *number_grid, GtkWidget *entry) {
-    // First row: buttons with numbers 0-9
+    // First row: buttons with numbers 0-9 (Max 10 buttons per row)
     for (int i=0; i<=9; i++) {
         GtkWidget *button=gtk_button_new_with_label(g_strdup_printf("%d", i));
         g_signal_connect(button, "clicked", G_CALLBACK(on_character_button_clicked), entry);
-        gtk_grid_attach(GTK_GRID(number_grid), button, i, 0, 1, 1);
+        gtk_grid_attach(GTK_GRID(number_grid), button, i % 10, i / 10, 1, 1);
     }
 
-    // Second row: buttons with Roman numerals
-    const char *roman_numerals[]={"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
+    // Second row: buttons with Roman numerals (including Roman numeral for 0, "nulla")
+    const char *roman_numerals[]={"nulla", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"};
     int num_roman=sizeof(roman_numerals) / sizeof(roman_numerals[0]);
     for (int i=0; i<num_roman; i++) {
         GtkWidget *button=gtk_button_new_with_label(roman_numerals[i]);
         g_signal_connect(button, "clicked", G_CALLBACK(on_character_button_clicked), entry);
-        gtk_grid_attach(GTK_GRID(number_grid), button, i, 1, 1, 1);
+        gtk_grid_attach(GTK_GRID(number_grid), button, i % 10, 1, 1, 1);
     }
 }
 
@@ -113,7 +128,7 @@ int main(int argc, char *argv[]) {
     symbol_grid=gtk_grid_new();
     emoji_grid=gtk_grid_new();
 
-    // Populate letter_grid (example layout)
+    // Populate letter_grid (example layout with 10 characters per row)
     for (char c='A'; c <= 'Z'; c++) {
         GtkWidget *button=gtk_button_new_with_label(g_strdup_printf("%c", c));
         g_signal_connect(button, "clicked", G_CALLBACK(on_character_button_clicked), entry);
@@ -126,45 +141,50 @@ int main(int argc, char *argv[]) {
     g_signal_connect(caps_lock_button, "clicked", G_CALLBACK(on_caps_lock_button_clicked), buttons_list);
     gtk_grid_attach(GTK_GRID(letter_grid), caps_lock_button, 0, 3, 2, 1); // Adjust position as needed
 
+    // Add Space and Clear buttons
+    GtkWidget *space_button=gtk_button_new_with_label("Space");
+    g_signal_connect(space_button, "clicked", G_CALLBACK(on_space_button_clicked), entry);
+    gtk_grid_attach(GTK_GRID(letter_grid), space_button, 2, 3, 2, 1); // Adjust position as needed
+
+    GtkWidget *clear_button=gtk_button_new_with_label("Clear");
+    g_signal_connect(clear_button, "clicked", G_CALLBACK(on_clear_button_clicked), entry);
+    gtk_grid_attach(GTK_GRID(letter_grid), clear_button, 4, 3, 2, 1); // Adjust position as needed
+
     // Populate number_grid with numbers and Roman numerals
     create_buttons(number_grid, entry);
 
-    // Populate symbol_grid (example layout)
-    const char *symbols[]={"{", "}", ":", ";", "!", "@", "#", "$", "%", "^", "&", "_", "=", "+", "-", "*", "(", ")"};
+    // Populate symbol_grid (Max 10 symbols per row)
+    const char *symbols[]={"{", "}", ":", ";", "!", "@", "#", "$", "%", "^", "&", "_", "=", "+", "-", "*", "(", ")", "\\", "/"};
+
     for (int i=0; i < sizeof(symbols) / sizeof(symbols[0]); i++) {
         GtkWidget *button=gtk_button_new_with_label(symbols[i]);
         g_signal_connect(button, "clicked", G_CALLBACK(on_character_button_clicked), entry);
-        gtk_grid_attach(GTK_GRID(symbol_grid), button, i, 0, 1, 1);
+        gtk_grid_attach(GTK_GRID(symbol_grid), button, i % 10, i / 10, 1, 1);
     }
 
-    // Populate emoji_grid (example layout)
+    // Populate emoji_grid (Max 10 emojis per row)
     const char *emojis[]={"😀", "😂", "🥳", "😍", "😎", "😢", "😡", "👍", "👎", "❤️"};
     for (int i=0; i < sizeof(emojis) / sizeof(emojis[0]); i++) {
         GtkWidget *button=gtk_button_new_with_label(emojis[i]);
         g_signal_connect(button, "clicked", G_CALLBACK(on_character_button_clicked), entry);
-        gtk_grid_attach(GTK_GRID(emoji_grid), button, i, 0, 1, 1);
+        gtk_grid_attach(GTK_GRID(emoji_grid), button, i % 10, i / 10, 1, 1);
     }
 
     // Add "Copy" button to the letter_grid
     GtkWidget *copy_button=gtk_button_new_with_label("Copy");
     g_signal_connect(copy_button, "clicked", G_CALLBACK(on_copy_button_clicked), entry);
-    gtk_grid_attach(GTK_GRID(letter_grid), copy_button, 8, 3, 2, 1); // Adjust position as needed
+    gtk_grid_attach(GTK_GRID(letter_grid), copy_button, 6, 3, 2, 1); // Adjust position as needed
 
-    // Append grids to the notebook
+    // Add tabs to the notebook
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), letter_grid, gtk_label_new("Letters"));
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), number_grid, gtk_label_new("Numbers"));
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), symbol_grid, gtk_label_new("Symbols"));
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), emoji_grid, gtk_label_new("Emojis"));
 
-    // Create About button and append to the vertical box
-    GtkWidget *about_button=gtk_button_new_with_label("About");
-    g_signal_connect(about_button, "clicked", G_CALLBACK(on_about_button_clicked), window);
-    gtk_box_pack_start(GTK_BOX(vbox), about_button, FALSE, FALSE, 0); // Add about button to the vertical box
-
     // Show all widgets
     gtk_widget_show_all(window);
 
-    // Start the main loop
+    // Start the GTK main loop
     gtk_main();
 
     return 0;
