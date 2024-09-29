@@ -32,7 +32,7 @@ void on_caps_lock_button_clicked(GtkWidget *widget, gpointer data) {
     caps_on=!caps_on;
 
     // Update the button label based on the Caps Lock state
-    gtk_button_set_label(GTK_BUTTON(widget), caps_on ? "Caps: ON" : "Caps: OFF");
+    gtk_button_set_label(GTK_BUTTON(widget), caps_on ? "Caps" : "Caps");
     g_print("Caps Lock state: %s\n", caps_on ? "ON" : "OFF");
 
     // Update button labels to reflect caps lock state
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Add Caps Lock button to letter_grid
-    GtkWidget *caps_lock_button=gtk_button_new_with_label("Caps: OFF");
+    GtkWidget *caps_lock_button=gtk_button_new_with_label("Caps");
     g_signal_connect(caps_lock_button, "clicked", G_CALLBACK(on_caps_lock_button_clicked), buttons_list);
     gtk_grid_attach(GTK_GRID(letter_grid), caps_lock_button, 0, 3, 2, 1); // Adjust position as needed
 
