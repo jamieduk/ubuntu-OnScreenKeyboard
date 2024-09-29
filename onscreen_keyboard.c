@@ -28,12 +28,12 @@ void on_copy_button_clicked(GtkWidget *widget, gpointer data) {
 
 // Function to toggle Caps Lock
 void on_caps_lock_button_clicked(GtkWidget *widget, gpointer data) {
-    static gboolean caps_on=FALSE;
+    static gboolean caps_on=TRUE;
     caps_on=!caps_on;
 
     // Update the button label based on the Caps Lock state
     gtk_button_set_label(GTK_BUTTON(widget), caps_on ? "Caps" : "Caps");
-    g_print("Caps Lock state: %s\n", caps_on ? "ON" : "OFF");
+    g_print("Caps Lock state: %s\n", caps_on ? "OFF" : "ON");
 
     // Update button labels to reflect caps lock state
     GList *buttons=(GList *)data;
@@ -67,8 +67,8 @@ void create_buttons(GtkWidget *number_grid, GtkWidget *entry) {
     }
 
     // Second row: buttons with Roman numerals
-    const char *roman_numerals[] = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
-    int num_roman = sizeof(roman_numerals) / sizeof(roman_numerals[0]);
+    const char *roman_numerals[]={"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
+    int num_roman=sizeof(roman_numerals) / sizeof(roman_numerals[0]);
     for (int i=0; i<num_roman; i++) {
         GtkWidget *button=gtk_button_new_with_label(roman_numerals[i]);
         g_signal_connect(button, "clicked", G_CALLBACK(on_character_button_clicked), entry);
