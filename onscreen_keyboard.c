@@ -20,6 +20,7 @@ void on_space_button_clicked(GtkWidget *widget, gpointer data);
 void on_clear_button_clicked(GtkWidget *widget, gpointer data);
 void on_copy_button_clicked(GtkWidget *widget, gpointer data);
 void on_caps_lock_button_clicked(GtkWidget *widget, gpointer data);
+void on_enter_button_clicked(GtkWidget *widget, gpointer data);
 void show_about_dialog(GtkWidget *widget, gpointer data);
 void update_letter_buttons(AppWidgets *app_widgets);
 
@@ -158,6 +159,10 @@ int main(int argc, char *argv[]) {
     g_signal_connect(caps_lock_button, "clicked", G_CALLBACK(on_caps_lock_button_clicked), app_widgets);
     gtk_box_pack_start(GTK_BOX(hbox), caps_lock_button, TRUE, TRUE, 0);
 
+    GtkWidget *enter_button=gtk_button_new_with_label("Enter");
+    g_signal_connect(enter_button, "clicked", G_CALLBACK(on_enter_button_clicked), app_widgets);
+    gtk_box_pack_start(GTK_BOX(hbox), enter_button, TRUE, TRUE, 0);
+
     // Connect the "destroy" event to exit the GTK main loop
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
@@ -229,6 +234,12 @@ void on_caps_lock_button_clicked(GtkWidget *widget, gpointer data) {
 
     // Update letter buttons to show correct case
     update_letter_buttons(app_widgets);
+}
+
+// Enter button callback function (emits the activate signal, same as pressing Enter in the entry/form)
+void on_enter_button_clicked(GtkWidget *widget, gpointer data) {
+    AppWidgets *app_widgets=(AppWidgets *)data;
+    g_signal_emit_by_name(app_widgets->entry, "activate");
 }
 
 // Update letter buttons based on Caps Lock state
