@@ -20,10 +20,13 @@ This project provides an on-screen keyboard specifically designed for Ubuntu ARM
 1. **Copy Binaries**: 
    To install the on-screen keyboard and the upgraded `gnome-screenshot`, copy all files to the `/usr/bin/` directory.
 
+# To install in your system
+./install.sh
+
    ```bash
    cp *.* /usr/bin/
 
-gcc `pkg-config --cflags gtk+-3.0` -o onscreen_keyboard onscreen_keyboard.c `pkg-config --libs gtk+-3.0`
+gcc `pkg-config --cflags gtk+-3.0` -o onscreen_keyboard onscreen_keyboard.c `pkg-config --libs gtk+-3.0` -lX11 -lXtst
 
 sudo chmod +x ./onscreen_keyboard
 
