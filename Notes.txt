@@ -18,4 +18,5 @@ where x =
 
 sudo chmod +x
 
-
+# To install in your system
+./install.sh
