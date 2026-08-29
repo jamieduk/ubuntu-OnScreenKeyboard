@@ -1,7 +1,15 @@
 #include <gtk/gtk.h>
+#include <gdk/gdkx.h>
+#include <X11/Xlib.h>
+#include <X11/keysym.h>
+#include <X11/extensions/XTest.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/uinput.h>
 // 
 // 
-// Developed by Jay @ J~Net© 2024
+// Developed by Jay @ J~Net© 2026
 // https://github.com/jamieduk/ubuntu-OnScreenKeyboard/
 
 #include <string.h>
@@ -31,6 +39,10 @@ int main(int argc, char *argv[]) {
     GtkWidget *window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "On-Screen Keyboard");
     gtk_window_set_default_size(GTK_WINDOW(window), 400, 300);
+    // Keep keyboard focus on the app/form the user is typing into: this window
+    // must never steal focus, otherwise the injected keys would land in the OSK.
+    gtk_window_set_accept_focus(GTK_WINDOW(window), FALSE);
+    gtk_window_set_focus_on_map(GTK_WINDOW(window), FALSE);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     // Create a vertical box
@@ -236,10 +248,82 @@ void on_caps_lock_button_clicked(GtkWidget *widget, gpointer data) {
     update_letter_buttons(app_widgets);
 }
 
-// Enter button callback function (emits the activate signal, same as pressing Enter in the entry/form)
+// Inject a real Enter keypress via the kernel virtual input device (/dev/uinput).
+// Works on both Wayland and X11 sessions; returns TRUE on success.
+static gboolean send_enter_via_uinput(void) {
+    int fd=open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+    if (fd < 0) {
+        return FALSE;
+    }
+
+    ioctl(fd, UI_SET_EVBIT, EV_KEY);
+    ioctl(fd, UI_SET_EVBIT, EV_SYN);
+    ioctl(fd, UI_SET_KEYBIT, KEY_ENTER);
+    ioctl(fd, UI_SET_KEYBIT, KEY_KPENTER);
+
+    struct uinput_setup setup;
+    memset(&setup, 0, sizeof(setup));
+    snprintf(setup.name, sizeof(setup.name), "On-Screen Keyboard");
+    setup.id.bustype=BUS_USB;
+    setup.id.vendor=0x1d6b;
+    setup.id.product=0x1d6b;
+    setup.id.version=1;
+
+    if (ioctl(fd, UI_DEV_SETUP, &setup) < 0 || ioctl(fd, UI_DEV_CREATE) < 0) {
+        close(fd);
+        return FALSE;
+    }
+
+    usleep(100000);
+
+    struct input_event ev;
+    memset(&ev, 0, sizeof(ev));
+    ev.type=EV_KEY; ev.code=KEY_ENTER; ev.value=1;
+    write(fd, &ev, sizeof(ev));
+    ev.type=EV_SYN; ev.code=SYN_REPORT; ev.value=0;
+    write(fd, &ev, sizeof(ev));
+    ev.type=EV_KEY; ev.code=KEY_ENTER; ev.value=0;
+    write(fd, &ev, sizeof(ev));
+    ev.type=EV_SYN; ev.code=SYN_REPORT; ev.value=0;
+    write(fd, &ev, sizeof(ev));
+
+    usleep(100000);
+    ioctl(fd, UI_DEV_DESTROY);
+    close(fd);
+    return TRUE;
+}
+
+// Enter button callback function (injects a real Enter keypress system-wide so the currently
+// focused window/form receives it as if Enter was pressed on a physical keyboard).
+// Priority: /dev/uinput (kernel level, works on Wayland + X11) -> XTEST (X11 only) ->
+// emit the entry's activate signal if no injection method is available.
 void on_enter_button_clicked(GtkWidget *widget, gpointer data) {
-    AppWidgets *app_widgets=(AppWidgets *)data;
-    g_signal_emit_by_name(app_widgets->entry, "activate");
+    if (send_enter_via_uinput()) {
+        return;
+    }
+
+    Display *display=NULL;
+    gboolean own_display=FALSE;
+
+    if (GDK_IS_X11_DISPLAY(gdk_display_get_default())) {
+        display=gdk_x11_display_get_xdisplay(gdk_display_get_default());
+    } else {
+        display=XOpenDisplay(NULL);
+        own_display=TRUE;
+    }
+
+    if (display != NULL) {
+        KeyCode return_key=XKeysymToKeycode(display, XK_Return);
+        XTestFakeKeyEvent(display, return_key, True, CurrentTime);
+        XTestFakeKeyEvent(display, return_key, False, CurrentTime);
+        XFlush(display);
+        if (own_display) {
+            XCloseDisplay(display);
+        }
+    } else {
+        AppWidgets *app_widgets=(AppWidgets *)data;
+        g_signal_emit_by_name(app_widgets->entry, "activate");
+    }
 }
 
 // Update letter buttons based on Caps Lock state
